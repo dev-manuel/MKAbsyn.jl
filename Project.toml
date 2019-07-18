@@ -1,0 +1,4 @@
+name = "Absyn.jl"
+uuid = "ce2f92e2-a952-11e9-0543-8b443f216f1d"
+authors = ["johti <johti17@liu.se>"]
+version = "0.1.0"
