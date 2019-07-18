@@ -1,13 +1,23 @@
 module AbsynTests
-using Absyn
 using Test
 
-@testset "Compiling Absyn via wildcard" begin
-  @test_nowarn @show(PROGRAM)
+@testset "Absyn tests" begin
+
+  @testset "Compiling Absyn via wildcard" begin
+    using Absyn
+    @test_nowarn @show(PROGRAM)
+  end
+
+  @testset "Test that we have Absyn.Program" begin
+    import Absyn
+    @test_nowarn @show(Absyn.PROGRAM)
+  end
+
+  @testset "Test Modelica style named imports" begin
+    using Absyn: PROGRAM
+    @test_nowarn @show(PROGRAM)
+  end
+
 end
 
-@testset "Test that we have Absyn.Program"
-@test_nowarn @show(Program)
-end
-
-end
+end #= End Absyn tests =#
