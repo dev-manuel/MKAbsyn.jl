@@ -37,7 +37,7 @@ using MetaModelica
 using ExportAll
   #= Necessary to write declarations for your uniontypes until Julia adds support for mutually recursive types =#
 
-  @UniontypeDecl ForIterator
+@UniontypeDecl ForIterator
 @UniontypeDecl Program
 @UniontypeDecl Within
 @UniontypeDecl Class
