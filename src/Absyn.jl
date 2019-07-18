@@ -215,7 +215,6 @@ and an optional array dimension and a list of modifications.
     comment #= comment =#::Option
   end
 end
->>>>>>> Ran automatic indention
 
 ArrayDim = IList  #= Component attributes are
 properties of components which are applied by type prefixes.
