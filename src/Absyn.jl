@@ -1,1485 +1,1485 @@
-#= /*
-* This file is part of OpenModelica.
-*
-* Copyright (c) 1998-CurrentYear, Open Source Modelica Consortium (OSMC),
-* c/o Linköpings universitet, Department of Computer and Information Science,
-* SE-58183 Linköping, Sweden.
-*
-* All rights reserved.
-*
-* THIS PROGRAM IS PROVIDED UNDER THE TERMS OF GPL VERSION 3 LICENSE OR
-* THIS OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
-* ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
-* RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
-* ACCORDING TO RECIPIENTS CHOICE.
-*
-* The OpenModelica software and the Open Source Modelica
-* Consortium (OSMC) Public License (OSMC-PL) are obtained
-* from OSMC, either from the above address,
-* from the URLs: http:www.ida.liu.se/projects/OpenModelica or
-* http:www.openmodelica.org, and in the OpenModelica distribution.
-* GNU version 3 is obtained from: http:www.gnu.org/copyleft/gpl.html.
-*
-* This program is distributed WITHOUT ANY WARRANTY; without
-* even the implied warranty of  MERCHANTABILITY or FITNESS
-* FOR A PARTICULAR PURPOSE, EXCEPT AS EXPRESSLY SET FORTH
-* IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE CONDITIONS OF OSMC-PL.
-*
-* See the full OSMC Public License conditions for more details.
-*
-*/ =#
-
-module Absyn
-
-
-using MetaModelica
-#= ExportAll is not good practice but it makes it so that we do not have to write export after each function :( =#
-using ExportAll
-  #= Necessary to write declarations for your uniontypes until Julia adds support for mutually recursive types =#
-
-@UniontypeDecl ForIterator
-@UniontypeDecl Program
-@UniontypeDecl Within
-@UniontypeDecl Class
-@UniontypeDecl ClassDef
-@UniontypeDecl TypeSpec
-@UniontypeDecl EnumDef
-@UniontypeDecl EnumLiteral
-@UniontypeDecl ClassPart
-@UniontypeDecl ElementItem
-@UniontypeDecl Element
-@UniontypeDecl ConstrainClass
-@UniontypeDecl ElementSpec
-@UniontypeDecl InnerOuter
-@UniontypeDecl Import
-@UniontypeDecl GroupImport
-@UniontypeDecl ComponentItem
-@UniontypeDecl Component
-@UniontypeDecl EquationItem
-@UniontypeDecl AlgorithmItem
-@UniontypeDecl Equation
-@UniontypeDecl Algorithm
-@UniontypeDecl Modification
-@UniontypeDecl EqMod
-@UniontypeDecl ElementArg
-@UniontypeDecl RedeclareKeywords
-@UniontypeDecl Each
-@UniontypeDecl ElementAttributes
-@UniontypeDecl IsField
-@UniontypeDecl Parallelism
-@UniontypeDecl FlowStream
-@UniontypeDecl Variability
-@UniontypeDecl Direction
-@UniontypeDecl Exp
-@UniontypeDecl Case
-@UniontypeDecl MatchType
-@UniontypeDecl CodeNode
-@UniontypeDecl FunctionArgs
-@UniontypeDecl ReductionIterType
-@UniontypeDecl NamedArg
-@UniontypeDecl Operator
-@UniontypeDecl Subscript
-@UniontypeDecl ComponentRef
-@UniontypeDecl Path
-@UniontypeDecl Restriction
-@UniontypeDecl FunctionPurity
-@UniontypeDecl FunctionRestriction
-@UniontypeDecl Annotation
-@UniontypeDecl Comment
-@UniontypeDecl ExternalDecl
-@UniontypeDecl Ref
-@UniontypeDecl Msg
-
-Ident = String  #= An identifier, for example a variable name =#
-
-#= For Iterator - these are used in:
-* for loops where the expression part can be NONE() and then the range
-is taken from an array variable that the iterator is used to index,
-see 3.3.3.2 Several Iterators from Modelica Specification.
-* in array iterators where the expression should always be SOME(Exp),
-see 3.4.4.2 Array constructor with iterators from Specification
-* the guard is a MetaModelica extension; it's a Boolean expression that
-filters out items in the range. =#
-@Uniontype ForIterator begin
-  @Record ITERATOR begin
-
-    name::String
-    guardExp::Option
-    range::Option
-  end
-end
-
-ForIterators = IList  #= For Iterators -
-these are used in:
-* for loops where the expression part can be NONE() and then the range
-is taken from an array variable that the iterator is used to index,
-see 3.3.3.2 Several Iterators from Modelica Specification.
-* in array iterators where the expression should always be SOME(Exp),
-see 3.4.4.2 Array constructor with iterators from Specification =#
-
-#= - Programs, the top level construct
-A program is simply a list of class definitions declared at top
-level in the source file, combined with a within statement that
-indicates the hieractical position of the program. =#
-@Uniontype Program begin
-  @Record PROGRAM begin
-
-    classes #= List of classes =#::IList
-    within_ #= Within clause =#::Within
-  end
-end
-
-#= Within Clauses =#
-@Uniontype Within begin
-  @Record WITHIN begin
-
-    path #= the path for within =#::Path
-  end
-
-  @Record TOP begin
-
-  end
-end
-
-Info = SourceInfo
-
-#= A class definition consists of a name, a flag to indicate
-if this class is declared as partial, the declared class restriction,
-and the body of the declaration. =#
-@Uniontype Class begin
-  @Record CLASS begin
-
-    name::Ident
-    partialPrefix #= true if partial =#::Bool
-    finalPrefix #= true if final =#::Bool
-    encapsulatedPrefix #= true if encapsulated =#::Bool
-    restriction #= Restriction =#::Restriction
-    body::ClassDef
-    info #= Information: FileName is the class is defined in +
-    isReadOnly bool + start line no + start column no +
-    end line no + end column no =#::Info
-  end
-end
-
-#= The ClassDef type contains thClasse definition part of a class declaration.
-The definition is either explicit, with a list of parts
-(public, protected, equation, and algorithm), or it is a definition
-derived from another class or an enumeration type.
-For a derived type, the  type contains the name of the derived class
-and an optional array dimension and a list of modifications.
-=#
-@Uniontype ClassDef begin
-  @Record PARTS begin
-
-    typeVars #= class A<B,C> ... has type variables B,C =#::IList
-    classAttrs #= optimization Op (objective=...) end Op. A list arguments attributing a
-    class declaration. Currently used only for Optimica extensions =#::IList
-    classParts::IList
-    ann #= Modelica2 allowed multiple class-annotations =#::IList
-    comment::Option
-  end
-
-  @Record DERIVED begin
-
-    typeSpec #= typeSpec specification includes array dimensions =#::TypeSpec
-    attributes::ElementAttributes
-    arguments::IList
-    comment::Option
-  end
+  module Absyn 
+
+
+    using MetaModelica
+    #= ExportAll is not good practice but it makes it so that we do not have to write export after each function :( =#
+    using ExportAll
+    #= Necessary to write declarations for your uniontypes until Julia adds support for mutually recursive types =#
+
+    @UniontypeDecl ForIterator 
+    @UniontypeDecl Program 
+    @UniontypeDecl Within 
+    @UniontypeDecl Class 
+    @UniontypeDecl ClassDef 
+    @UniontypeDecl TypeSpec 
+    @UniontypeDecl EnumDef 
+    @UniontypeDecl EnumLiteral 
+    @UniontypeDecl ClassPart 
+    @UniontypeDecl ElementItem 
+    @UniontypeDecl Element 
+    @UniontypeDecl ConstrainClass 
+    @UniontypeDecl ElementSpec 
+    @UniontypeDecl InnerOuter 
+    @UniontypeDecl Import 
+    @UniontypeDecl GroupImport 
+    @UniontypeDecl ComponentItem 
+    @UniontypeDecl Component 
+    @UniontypeDecl EquationItem 
+    @UniontypeDecl AlgorithmItem 
+    @UniontypeDecl Equation 
+    @UniontypeDecl Algorithm 
+    @UniontypeDecl Modification 
+    @UniontypeDecl EqMod 
+    @UniontypeDecl ElementArg 
+    @UniontypeDecl RedeclareKeywords 
+    @UniontypeDecl Each 
+    @UniontypeDecl ElementAttributes 
+    @UniontypeDecl IsField 
+    @UniontypeDecl Parallelism 
+    @UniontypeDecl FlowStream 
+    @UniontypeDecl Variability 
+    @UniontypeDecl Direction 
+    @UniontypeDecl Exp 
+    @UniontypeDecl Case 
+    @UniontypeDecl MatchType 
+    @UniontypeDecl CodeNode 
+    @UniontypeDecl FunctionArgs 
+    @UniontypeDecl ReductionIterType 
+    @UniontypeDecl NamedArg 
+    @UniontypeDecl Operator 
+    @UniontypeDecl Subscript 
+    @UniontypeDecl ComponentRef 
+    @UniontypeDecl Path 
+    @UniontypeDecl Restriction 
+    @UniontypeDecl FunctionPurity 
+    @UniontypeDecl FunctionRestriction 
+    @UniontypeDecl Annotation 
+    @UniontypeDecl Comment 
+    @UniontypeDecl ExternalDecl 
+    @UniontypeDecl Ref 
+    @UniontypeDecl Msg 
+
+         #= /*
+         * This file is part of OpenModelica.
+         *
+         * Copyright (c) 1998-2014, Open Source Modelica Consortium (OSMC),
+         * c/o Linköpings universitet, Department of Computer and Information Science,
+         * SE-58183 Linköping, Sweden.
+         *
+         * All rights reserved.
+         *
+         * THIS PROGRAM IS PROVIDED UNDER THE TERMS OF GPL VERSION 3 LICENSE OR
+         * THIS OSMC PUBLIC LICENSE (OSMC-PL) VERSION 1.2.
+         * ANY USE, REPRODUCTION OR DISTRIBUTION OF THIS PROGRAM CONSTITUTES
+         * RECIPIENT'S ACCEPTANCE OF THE OSMC PUBLIC LICENSE OR THE GPL VERSION 3,
+         * ACCORDING TO RECIPIENTS CHOICE.
+         *
+         * The OpenModelica software and the Open Source Modelica
+         * Consortium (OSMC) Public License (OSMC-PL) are obtained
+         * from OSMC, either from the above address,
+         * from the URLs: http:www.ida.liu.se/projects/OpenModelica or
+         * http:www.openmodelica.org, and in the OpenModelica distribution.
+         * GNU version 3 is obtained from: http:www.gnu.org/copyleft/gpl.html.
+         *
+         * This program is distributed WITHOUT ANY WARRANTY; without
+         * even the implied warranty of  MERCHANTABILITY or FITNESS
+         * FOR A PARTICULAR PURPOSE, EXCEPT AS EXPRESSLY SET FORTH
+         * IN THE BY RECIPIENT SELECTED SUBSIDIARY LICENSE CONDITIONS OF OSMC-PL.
+         *
+         * See the full OSMC Public License conditions for more details.
+         *
+         */ =#
+
+        Ident = String  #= An identifier, for example a variable name =#
+
+          #= For Iterator - these are used in:
+            * for loops where the expression part can be NONE() and then the range
+              is taken from an array variable that the iterator is used to index,
+              see 3.3.3.2 Several Iterators from Modelica Specification.
+            * in array iterators where the expression should always be SOME(Exp),
+              see 3.4.4.2 Array constructor with iterators from Specification
+            * the guard is a MetaModelica extension; it's a Boolean expression that
+              filters out items in the range. =#
+         @Uniontype ForIterator begin
+              @Record ITERATOR begin
+
+                       name::String
+                       guardExp::Option{Exp}
+                       range::Option{Exp}
+              end
+         end
+
+        ForIterators = List{ForIterator}  #= For Iterators -
+           these are used in:
+           * for loops where the expression part can be NONE() and then the range
+             is taken from an array variable that the iterator is used to index,
+             see 3.3.3.2 Several Iterators from Modelica Specification.
+           * in array iterators where the expression should always be SOME(Exp),
+             see 3.4.4.2 Array constructor with iterators from Specification =#
+
+          #= - Programs, the top level construct
+            A program is simply a list of class definitions declared at top
+            level in the source file, combined with a within statement that
+            indicates the hieractical position of the program. =#
+         @Uniontype Program begin
+              @Record PROGRAM begin
+
+                       classes #= List of classes =#::List{Class}
+                       within_ #= Within clause =#::Within
+              end
+         end
+
+          #= Within Clauses =#
+         @Uniontype Within begin
+              @Record WITHIN begin
+
+                       path #= the path for within =#::Path
+              end
+
+              @Record TOP begin
+
+              end
+         end
+
+        Info = SourceInfo 
+
+          #= A class definition consists of a name, a flag to indicate
+           if this class is declared as partial, the declared class restriction,
+           and the body of the declaration. =#
+         @Uniontype Class begin
+              @Record CLASS begin
+
+                       name::Ident
+                       partialPrefix #= true if partial =#::Bool
+                       finalPrefix #= true if final =#::Bool
+                       encapsulatedPrefix #= true if encapsulated =#::Bool
+                       restriction #= Restriction =#::Restriction
+                       body::ClassDef
+                       info #= Information: FileName is the class is defined in +
+                                      isReadOnly bool + start line no + start column no +
+                                      end line no + end column no =#::Info
+              end
+         end
+
+          #= The ClassDef type contains thClasse definition part of a class declaration.
+          The definition is either explicit, with a list of parts
+          (public, protected, equation, and algorithm), or it is a definition
+          derived from another class or an enumeration type.
+          For a derived type, the  type contains the name of the derived class
+          and an optional array dimension and a list of modifications.
+           =#
+         @Uniontype ClassDef begin
+              @Record PARTS begin
+
+                       typeVars #= class A<B,C> ... has type variables B,C =#::List{String}
+                       classAttrs #= optimization Op (objective=...) end Op. A list arguments attributing a
+                           class declaration. Currently used only for Optimica extensions =#::List{NamedArg}
+                       classParts::List{ClassPart}
+                       ann #= Modelica2 allowed multiple class-annotations =#::List{Annotation}
+                       comment::Option{String}
+              end
+
+              @Record DERIVED begin
+
+                       typeSpec #= typeSpec specification includes array dimensions =#::TypeSpec
+                       attributes::ElementAttributes
+                       arguments::List{ElementArg}
+                       comment::Option{Comment}
+              end
+
+              @Record ENUMERATION begin
+
+                       enumLiterals::EnumDef
+                       comment::Option{Comment}
+              end
+
+              @Record OVERLOAD begin
+
+                       functionNames::List{Path}
+                       comment::Option{Comment}
+              end
+
+              @Record CLASS_EXTENDS begin
+
+                       baseClassName #= name of class to extend =#::Ident
+                       modifications #= modifications to be applied to the base class =#::List{ElementArg}
+                       comment #= comment =#::Option{String}
+                       parts #= class parts =#::List{ClassPart}
+                       ann::List{Annotation}
+              end
+
+              @Record PDER begin
+
+                       functionName::Path
+                       vars #= derived variables =#::List{Ident}
+                       comment #= comment =#::Option{Comment}
+              end
+         end
+
+        ArrayDim = List{Subscript}  #= Component attributes are
+          properties of components which are applied by type prefixes.
+          As an example, declaring a component as `input Real x;\\' will
+          give the attributes `ATTR({},false,VAR,INPUT)\\'.
+          Components in Modelica can be scalar or arrays with one or more
+          dimensions. This type is used to indicate the dimensionality
+          of a component or a type definition.
+        - Array dimensions =#
+
+          #= ModExtension: new MetaModelica type specification! =#
+         @Uniontype TypeSpec begin
+              @Record TPATH begin
+
+                       path::Path
+                       arrayDim::Option{ArrayDim}
+              end
+
+              @Record TCOMPLEX begin
+
+                       path::Path
+                       typeSpecs::List{TypeSpec}
+                       arrayDim::Option{ArrayDim}
+              end
+         end
+
+          #= The definition of an enumeration is either a list of literals
+              or a colon, \\':\\', which defines a supertype of all enumerations =#
+         @Uniontype EnumDef begin
+              @Record ENUMLITERALS begin
+
+                       enumLiterals::List{EnumLiteral}
+              end
+
+              @Record ENUM_COLON begin
+
+              end
+         end
+
+          #= EnumLiteral, which is a name in an enumeration and an optional
+            Comment. =#
+         @Uniontype EnumLiteral begin
+              @Record ENUMLITERAL begin
+
+                       literal::Ident
+                       comment::Option{Comment}
+              end
+         end
+
+          #= A class definition contains several parts.  There are public and
+           protected component declarations, type definitions and `extends\\'
+           clauses, collectively called elements.  There are also equation
+           sections and algorithm sections. The EXTERNAL part is used only by functions
+           which can be declared as external C or FORTRAN functions. =#
+         @Uniontype ClassPart begin
+              @Record PUBLIC begin
+
+                       contents::List{ElementItem}
+              end
+
+              @Record PROTECTED begin
+
+                       contents::List{ElementItem}
+              end
+
+              @Record CONSTRAINTS begin
+
+                       contents::List{Exp}
+              end
+
+              @Record EQUATIONS begin
+
+                       contents::List{EquationItem}
+              end
+
+              @Record INITIALEQUATIONS begin
+
+                       contents::List{EquationItem}
+              end
+
+              @Record ALGORITHMS begin
+
+                       contents::List{AlgorithmItem}
+              end
+
+              @Record INITIALALGORITHMS begin
+
+                       contents::List{AlgorithmItem}
+              end
+
+              @Record EXTERNAL begin
+
+                       externalDecl #= externalDecl =#::ExternalDecl
+                       annotation_ #= annotation =#::Option{Annotation}
+              end
+         end
+
+          #= An element item is either an element or an annotation =#
+         @Uniontype ElementItem begin
+              @Record ELEMENTITEM begin
+
+                       element::Element
+              end
+
+              @Record LEXER_COMMENT begin
+
+                       comment::String
+              end
+         end
+
+          #= Elements
+           The basic element type in Modelica =#
+         @Uniontype Element begin
+              @Record ELEMENT begin
+
+                       finalPrefix::Bool
+                       redeclareKeywords #= replaceable, redeclare =#::Option{RedeclareKeywords}
+                       innerOuter #= inner/outer =#::InnerOuter
+                       specification #= Actual element specification =#::ElementSpec
+                       info #= File name the class is defined in + line no + column no =#::Info
+                       constrainClass #= only valid for classdef and component =#::Option{ConstrainClass}
+              end
+
+              @Record DEFINEUNIT begin
+
+                       name::Ident
+                       args::List{NamedArg}
+              end
+
+              @Record TEXT begin
 
-  @Record ENUMERATION begin
+                       optName #= optName : optional name of text, e.g. model with syntax error.
+                                                              We need the name to be able to browse it... =#::Option{Ident}
+                       string::String
+                       info::Info
+              end
+         end
 
-    enumLiterals::EnumDef
-    comment::Option
-  end
-
-  @Record OVERLOAD begin
-
-    functionNames::IList
-    comment::Option
-  end
-
-  @Record CLASS_EXTENDS begin
+          #= Constraining type, must be extends =#
+         @Uniontype ConstrainClass begin
+              @Record CONSTRAINCLASS begin
 
-    baseClassName #= name of class to extend =#::Ident
-    modifications #= modifications to be applied to the base class =#::IList
-    comment #= comment =#::Option
-    parts #= class parts =#::IList
-    ann::IList
-  end
+                       elementSpec #= must be extends =#::ElementSpec
+                       comment #= comment =#::Option{Comment}
+              end
+         end
 
-  @Record PDER begin
+          #= An element is something that occurs in a public or protected
+             section in a class definition.  There is one constructor in the
+             `ElementSpec\\' type for each possible element type.  There are
+             class definitions (`CLASSDEF\\'), `extends\\' clauses (`EXTENDS\\')
+             and component declarations (`COMPONENTS\\').
 
-    functionName::Path
-    vars #= derived variables =#::IList
-    comment #= comment =#::Option
-  end
-end
-
-ArrayDim = IList  #= Component attributes are
-properties of components which are applied by type prefixes.
-As an example, declaring a component as `input Real x;\\' will
-give the attributes `ATTR({},false,VAR,INPUT)\\'.
-Components in Modelica can be scalar or arrays with one or more
-dimensions. This type is used to indicate the dimensionality
-of a component or a type definition.
-- Array dimensions =#
-
-#= ModExtension: new MetaModelica type specification! =#
-@Uniontype TypeSpec begin
-  @Record TPATH begin
-
-    path::Path
-    arrayDim::Option
-  end
+             As an example, if the element `extends TwoPin;\\' appears
+             in the source, it is represented in the AST as
+             `EXTENDS(IDENT(\\\"TwoPin\\\"),{})\\'.
+          =#
+         @Uniontype ElementSpec begin
+              @Record CLASSDEF begin
 
-  @Record TCOMPLEX begin
+                       replaceable_ #= replaceable =#::Bool
+                       class_ #= class =#::Class
+              end
 
-    path::Path
-    typeSpecs::IList
-    arrayDim::Option
-  end
-end
+              @Record EXTENDS begin
 
-#= The definition of an enumeration is either a list of literals
-or a colon, \\':\\', which defines a supertype of all enumerations =#
-@Uniontype EnumDef begin
-  @Record ENUMLITERALS begin
+                       path #= path =#::Path
+                       elementArg #= elementArg =#::List{ElementArg}
+                       annotationOpt #= optional annotation =#::Option{Annotation}
+              end
 
-    enumLiterals::IList
-  end
+              @Record IMPORT begin
+
+                       import_ #= import =#::Import
+                       comment #= comment =#::Option{Comment}
+                       info::Info
+              end
+
+              @Record COMPONENTS begin
 
-  @Record ENUM_COLON begin
+                       attributes #= attributes =#::ElementAttributes
+                       typeSpec #= typeSpec =#::TypeSpec
+                       components #= components =#::List{ComponentItem}
+              end
+         end
+
+          #= One of the keyword inner and outer CAN be given to reference an
+            inner or outer element. Thus there are three disjoint possibilities. =#
+         @Uniontype InnerOuter begin
+              @Record INNER begin
 
-  end
-end
-
-#= EnumLiteral, which is a name in an enumeration and an optional
-Comment. =#
-@Uniontype EnumLiteral begin
-  @Record ENUMLITERAL begin
-
-    literal::Ident
-    comment::Option
-  end
-end
-
-#= A class definition contains several parts.  There are public and
-protected component declarations, type definitions and `extends\\'
-clauses, collectively called elements.  There are also equation
-sections and algorithm sections. The EXTERNAL part is used only by functions
-which can be declared as external C or FORTRAN functions. =#
-@Uniontype ClassPart begin
-  @Record PUBLIC begin
-
-    contents::IList
-  end
+              end
+
+              @Record OUTER begin
 
-  @Record PROTECTED begin
+              end
+
+              @Record INNER_OUTER begin
+
+              end
+
+              @Record NOT_INNER_OUTER begin
 
-    contents::IList
-  end
+              end
+         end
 
-  @Record CONSTRAINTS begin
+          #= Import statements, different kinds =#
+         @Uniontype Import begin
+               #=  A named import is a import statement to a variable ex;
+               =#
+               #=  NAMED_IMPORT(\"SI\",QUALIFIED(\"Modelica\",IDENT(\"SIunits\")));
+               =#
+
+              @Record NAMED_IMPORT begin
+
+                       name #= name =#::Ident
+                       path #= path =#::Path
+              end
 
-    contents::IList
-  end
+              @Record QUAL_IMPORT begin
+
+                       path #= path =#::Path
+              end
 
-  @Record EQUATIONS begin
+              @Record UNQUAL_IMPORT begin
 
-    contents::IList
-  end
+                       path #= path =#::Path
+              end
+
+              @Record GROUP_IMPORT begin
 
-  @Record INITIALEQUATIONS begin
+                       prefix::Path
+                       groups::List{GroupImport}
+              end
+         end
 
-    contents::IList
-  end
+         @Uniontype GroupImport begin
+              @Record GROUP_IMPORT_NAME begin
 
-  @Record ALGORITHMS begin
+                       name::String
+              end
 
-    contents::IList
-  end
+              @Record GROUP_IMPORT_RENAME begin
 
-  @Record INITIALALGORITHMS begin
+                       rename::String
+                       name::String
+              end
+         end
 
-    contents::IList
-  end
+        ComponentCondition = Exp  #= A componentItem can have a condition that must be fulfilled if
+          the component should be instantiated.
+         =#
 
-  @Record EXTERNAL begin
+          #= Collection of component and an optional comment =#
+         @Uniontype ComponentItem begin
+              @Record COMPONENTITEM begin
 
-    externalDecl #= externalDecl =#::ExternalDecl
-    annotation_ #= annotation =#::Option
-  end
-end
+                       component #= component =#::Component
+                       condition #= condition =#::Option{ComponentCondition}
+                       comment #= comment =#::Option{Comment}
+              end
+         end
 
-#= An element item is either an element or an annotation =#
-@Uniontype ElementItem begin
-  @Record ELEMENTITEM begin
+          #= Some kind of Modelica entity (object or variable) =#
+         @Uniontype Component begin
+              @Record COMPONENT begin
 
-    element::Element
-  end
+                       name #= name =#::Ident
+                       arrayDim #= Array dimensions, if any =#::ArrayDim
+                       modification #= Optional modification =#::Option{Modification}
+              end
+         end
 
-  @Record LEXER_COMMENT begin
+          #= Several component declarations can be grouped together in one
+           `ElementSpec\\' by writing them on the same line in the source.
+           This type contains the information specific to one component. =#
+         @Uniontype EquationItem begin
+              @Record EQUATIONITEM begin
 
-    comment::String
-  end
-end
-
-#= Elements
-The basic element type in Modelica =#
-@Uniontype Element begin
-  @Record ELEMENT begin
-
-    finalPrefix::Bool
-    redeclareKeywords #= replaceable, redeclare =#::Option
-    innerOuter #= inner/outer =#::InnerOuter
-    specification #= Actual element specification =#::ElementSpec
-    info #= File name the class is defined in + line no + column no =#::Info
-    constrainClass #= only valid for classdef and component =#::Option
-  end
+                       equation_ #= equation =#::Equation
+                       comment #= comment =#::Option{Comment}
+                       info #= line number =#::Info
+              end
 
-  @Record DEFINEUNIT begin
+              @Record EQUATIONITEMCOMMENT begin
 
-    name::Ident
-    args::IList
-  end
+                       comment::String
+              end
+         end
 
-  @Record TEXT begin
+          #= Info specific for an algorithm item. =#
+         @Uniontype AlgorithmItem begin
+              @Record ALGORITHMITEM begin
 
-    optName #= optName : optional name of text, e.g. model with syntax error.
-    We need the name to be able to browse it... =#::Option
-    string::String
-    info::Info
-  end
-end
+                       algorithm_ #= algorithm =#::Algorithm
+                       comment #= comment =#::Option{Comment}
+                       info #= line number =#::Info
+              end
 
-#= Constraining type, must be extends =#
-@Uniontype ConstrainClass begin
-  @Record CONSTRAINCLASS begin
+              @Record ALGORITHMITEMCOMMENT begin
 
-    elementSpec #= must be extends =#::ElementSpec
-    comment #= comment =#::Option
-  end
-end
-
-#= An element is something that occurs in a public or protected
-section in a class definition.  There is one constructor in the
-`ElementSpec\\' type for each possible element type.  There are
-class definitions (`CLASSDEF\\'), `extends\\' clauses (`EXTENDS\\')
-and component declarations (`COMPONENTS\\').
-
-As an example, if the element `extends TwoPin;\\' appears
-in the source, it is represented in the AST as
-`EXTENDS(IDENT(\\\"TwoPin\\\"),{})\\'.
-=#
-@Uniontype ElementSpec begin
-  @Record CLASSDEF begin
-
-    replaceable_ #= replaceable =#::Bool
-    class_ #= class =#::Class
-  end
+                       comment::String
+              end
+         end
 
-  @Record EXTENDS begin
+          #= Information on one (kind) of equation, different constructors for different
+              kinds of equations =#
+         @Uniontype Equation begin
+              @Record EQ_IF begin
 
-    path #= path =#::Path
-    elementArg #= elementArg =#::IList
-    annotationOpt #= optional annotation =#::Option
-  end
+                       ifExp #= Conditional expression =#::Exp
+                       equationTrueItems #= true branch =#::List{EquationItem}
+                       elseIfBranches #= elseIfBranches =#::List{Tuple{Exp, List{EquationItem}}}
+                       equationElseItems #= equationElseItems Standard 2-side eqn =#::List{EquationItem}
+              end
 
-  @Record IMPORT begin
+              @Record EQ_EQUALS begin
 
-    import_ #= import =#::Import
-  comment #= comment =#::Option
-    info::Info
-  end
+                       leftSide #= leftSide =#::Exp
+                       rightSide #= rightSide Connect stmt =#::Exp
+              end
 
-  @Record COMPONENTS begin
+              @Record EQ_PDE begin
 
-    attributes #= attributes =#::ElementAttributes
-    typeSpec #= typeSpec =#::TypeSpec
-    components #= components =#::IList
-  end
-end
+                       leftSide #= leftSide =#::Exp
+                       rightSide #= rightSide Connect stmt =#::Exp
+                       domain #= domain for PDEs =#::ComponentRef
+              end
 
-#= One of the keyword inner and outer CAN be given to reference an
-inner or outer element. Thus there are three disjoint possibilities. =#
-@Uniontype InnerOuter begin
-  @Record INNER begin
+              @Record EQ_CONNECT begin
 
-  end
+                       connector1 #= connector1 =#::ComponentRef
+                       connector2 #= connector2 =#::ComponentRef
+              end
 
-  @Record OUTER begin
+              @Record EQ_FOR begin
 
-  end
+                       iterators::ForIterators
+                       forEquations #= forEquations =#::List{EquationItem}
+              end
 
-  @Record INNER_OUTER begin
+              @Record EQ_WHEN_E begin
 
-  end
+                       whenExp #= whenExp =#::Exp
+                       whenEquations #= whenEquations =#::List{EquationItem}
+                       elseWhenEquations #= elseWhenEquations =#::List{Tuple{Exp, List{EquationItem}}}
+              end
 
-  @Record NOT_INNER_OUTER begin
+              @Record EQ_NORETCALL begin
 
-  end
-end
-
-#= Import statements, different kinds =#
-@Uniontype Import begin
-  #=  A named import is a import statement to a variable ex;
-  =#
-  #=  NAMED_IMPORT(\"SI\",QUALIFIED(\"Modelica\",IDENT(\"SIunits\")));
-  =#
-
-  @Record NAMED_IMPORT begin
-
-    name #= name =#::Ident
-    path #= path =#::Path
-  end
+                       functionName #= functionName =#::ComponentRef
+                       functionArgs #= functionArgs; fcalls without return value =#::FunctionArgs
+              end
 
-  @Record QUAL_IMPORT begin
+              @Record EQ_FAILURE begin
 
-    path #= path =#::Path
-  end
+                       equ::EquationItem
+              end
+         end
 
-  @Record UNQUAL_IMPORT begin
+          #= The Algorithm type describes one algorithm statement in an
+           algorithm section.  It does not describe a whole algorithm.  The
+           reason this type is named like this is that the name of the
+           grammar rule for algorithm statements is `algorithm\\'. =#
+         @Uniontype Algorithm begin
+              @Record ALG_ASSIGN begin
 
-    path #= path =#::Path
-  end
+                       assignComponent #= assignComponent =#::Exp
+                       value #= value =#::Exp
+              end
 
-  @Record GROUP_IMPORT begin
+              @Record ALG_IF begin
 
-    prefix::Path
-    groups::IList
-  end
-end
+                       ifExp #= ifExp =#::Exp
+                       trueBranch #= trueBranch =#::List{AlgorithmItem}
+                       elseIfAlgorithmBranch #= elseIfAlgorithmBranch =#::List{Tuple{Exp, List{AlgorithmItem}}}
+                       elseBranch #= elseBranch =#::List{AlgorithmItem}
+              end
 
-@Uniontype GroupImport begin
-  @Record GROUP_IMPORT_NAME begin
+              @Record ALG_FOR begin
 
-    name::String
-  end
+                       iterators::ForIterators
+                       forBody #= forBody =#::List{AlgorithmItem}
+              end
 
-  @Record GROUP_IMPORT_RENAME begin
+              @Record ALG_PARFOR begin
 
-    rename::String
-    name::String
-  end
-end
-
-ComponentCondition = Exp  #= A componentItem can have a condition that must be fulfilled if
-the component should be instantiated.
-=#
-
-#= Collection of component and an optional comment =#
-@Uniontype ComponentItem begin
-  @Record COMPONENTITEM begin
-
-    component #= component =#::Component
-    condition #= condition =#::Option
-    comment #= comment =#::Option
-  end
-end
-
-#= Some kind of Modelica entity (object or variable) =#
-@Uniontype Component begin
-  @Record COMPONENT begin
-
-    name #= name =#::Ident
-    arrayDim #= Array dimensions, if any =#::ArrayDim
-    modification #= Optional modification =#::Option
-  end
-end
-
-#= Several component declarations can be grouped together in one
-`ElementSpec\\' by writing them on the same line in the source.
-This type contains the information specific to one component. =#
-@Uniontype EquationItem begin
-  @Record EQUATIONITEM begin
-
-    equation_ #= equation =#::Equation
-    comment #= comment =#::Option
-    info #= line number =#::Info
-  end
+                       iterators::ForIterators
+                       parforBody #= parallel for loop Body =#::List{AlgorithmItem}
+              end
 
-  @Record EQUATIONITEMCOMMENT begin
+              @Record ALG_WHILE begin
 
-    comment::String
-  end
-end
-
-#= Info specific for an algorithm item. =#
-@Uniontype AlgorithmItem begin
-  @Record ALGORITHMITEM begin
-
-    algorithm_ #= algorithm =#::Algorithm
-    comment #= comment =#::Option
-    info #= line number =#::Info
-  end
+                       boolExpr #= boolExpr =#::Exp
+                       whileBody #= whileBody =#::List{AlgorithmItem}
+              end
 
-  @Record ALGORITHMITEMCOMMENT begin
+              @Record ALG_WHEN_A begin
 
-    comment::String
-  end
-end
-
-#= Information on one (kind) of equation, different constructors for different
-kinds of equations =#
-@Uniontype Equation begin
-  @Record EQ_IF begin
-
-    ifExp #= Conditional expression =#::Exp
-    equationTrueItems #= true branch =#::IList
-    elseIfBranches #= elseIfBranches =#::IList
-    equationElseItems #= equationElseItems Standard 2-side eqn =#::IList
-  end
+                       boolExpr #= boolExpr =#::Exp
+                       whenBody #= whenBody =#::List{AlgorithmItem}
+                       elseWhenAlgorithmBranch #= elseWhenAlgorithmBranch =#::List{Tuple{Exp, List{AlgorithmItem}}}
+              end
 
-  @Record EQ_EQUALS begin
+              @Record ALG_NORETCALL begin
 
-    leftSide #= leftSide =#::Exp
-    rightSide #= rightSide Connect stmt =#::Exp
-  end
+                       functionCall #= functionCall =#::ComponentRef
+                       functionArgs #= functionArgs; general fcalls without return value =#::FunctionArgs
+              end
 
-  @Record EQ_PDE begin
+              @Record ALG_RETURN begin
 
-    leftSide #= leftSide =#::Exp
-    rightSide #= rightSide Connect stmt =#::Exp
-    domain #= domain for PDEs =#::ComponentRef
-  end
+              end
 
-  @Record EQ_CONNECT begin
+              @Record ALG_BREAK begin
 
-    connector1 #= connector1 =#::ComponentRef
-    connector2 #= connector2 =#::ComponentRef
-  end
+              end
 
-  @Record EQ_FOR begin
+               #=  MetaModelica extensions
+               =#
 
-    iterators::ForIterators
-    forEquations #= forEquations =#::IList
-  end
+              @Record ALG_FAILURE begin
 
-  @Record EQ_WHEN_E begin
+                       equ::List{AlgorithmItem}
+              end
 
-    whenExp #= whenExp =#::Exp
-    whenEquations #= whenEquations =#::IList
-    elseWhenEquations #= elseWhenEquations =#::IList
-  end
+              @Record ALG_TRY begin
 
-  @Record EQ_NORETCALL begin
+                       body::List{AlgorithmItem}
+                       elseBody::List{AlgorithmItem}
+              end
 
-    functionName #= functionName =#::ComponentRef
-    functionArgs #= functionArgs; fcalls without return value =#::FunctionArgs
-  end
+              @Record ALG_CONTINUE begin
 
-  @Record EQ_FAILURE begin
+              end
+         end
 
-    equ::EquationItem
-  end
-end
-
-#= The Algorithm type describes one algorithm statement in an
-algorithm section.  It does not describe a whole algorithm.  The
-reason this type is named like this is that the name of the
-grammar rule for algorithm statements is `algorithm\\'. =#
-@Uniontype Algorithm begin
-  @Record ALG_ASSIGN begin
-
-    assignComponent #= assignComponent =#::Exp
-    value #= value =#::Exp
-  end
+          #= Modifications are described by the `Modification\\' type.  There
+           are two forms of modifications: redeclarations and component
+           modifications.
+           - Modifications =#
+         @Uniontype Modification begin
+              @Record CLASSMOD begin
 
-  @Record ALG_IF begin
+                       elementArgLst::List{ElementArg}
+                       eqMod::EqMod
+              end
+         end
 
-    ifExp #= ifExp =#::Exp
-    trueBranch #= trueBranch =#::IList
-    elseIfAlgorithmBranch #= elseIfAlgorithmBranch =#::IList
-    elseBranch #= elseBranch =#::IList
-  end
+         @Uniontype EqMod begin
+              @Record NOMOD begin
 
-  @Record ALG_FOR begin
+              end
 
-    iterators::ForIterators
-    forBody #= forBody =#::IList
-  end
+              @Record EQMOD begin
 
-  @Record ALG_PARFOR begin
+                       exp::Exp
+                       info::Info
+              end
+         end
 
-    iterators::ForIterators
-    parforBody #= parallel for loop Body =#::IList
-  end
+          #= Wrapper for things that modify elements, modifications and redeclarations =#
+         @Uniontype ElementArg begin
+              @Record MODIFICATION begin
 
-  @Record ALG_WHILE begin
+                       finalPrefix #= final prefix =#::Bool
+                       eachPrefix #= each =#::Each
+                       path::Path
+                       modification #= modification =#::Option{Modification}
+                       comment #= comment =#::Option{String}
+                       info::Info
+              end
 
-    boolExpr #= boolExpr =#::Exp
-    whileBody #= whileBody =#::IList
-  end
+              @Record REDECLARATION begin
 
-  @Record ALG_WHEN_A begin
+                       finalPrefix #= final prefix =#::Bool
+                       redeclareKeywords #= redeclare  or replaceable  =#::RedeclareKeywords
+                       eachPrefix #= each prefix =#::Each
+                       elementSpec #= elementSpec =#::ElementSpec
+                       constrainClass #= class definition or declaration =#::Option{ConstrainClass}
+                       info #= needed because ElementSpec does not contain this info; Element does =#::Info
+              end
+         end
 
-    boolExpr #= boolExpr =#::Exp
-    whenBody #= whenBody =#::IList
-    elseWhenAlgorithmBranch #= elseWhenAlgorithmBranch =#::IList
-  end
+          #= The keywords redeclare and replacable can be given in three different kombinations, each one by themself or the both combined. =#
+         @Uniontype RedeclareKeywords begin
+              @Record REDECLARE begin
 
-  @Record ALG_NORETCALL begin
+              end
 
-    functionCall #= functionCall =#::ComponentRef
-    functionArgs #= functionArgs; general fcalls without return value =#::FunctionArgs
-  end
+              @Record REPLACEABLE begin
 
-  @Record ALG_RETURN begin
+              end
 
-  end
+              @Record REDECLARE_REPLACEABLE begin
 
-  @Record ALG_BREAK begin
+              end
+         end
 
-  end
+          #= The each keyword can be present in both MODIFICATION\\'s and REDECLARATION\\'s.
+           - Each attribute =#
+         @Uniontype Each begin
+              @Record EACH begin
 
-  #=  MetaModelica extensions
-  =#
+              end
 
-  @Record ALG_FAILURE begin
+              @Record NON_EACH begin
 
-    equ::IList
-  end
+              end
+         end
 
-  @Record ALG_TRY begin
+          #= Element attributes =#
+         @Uniontype ElementAttributes begin
+              @Record ATTR begin
 
-    body::IList
-    elseBody::IList
-  end
+                       flowPrefix #= flow =#::Bool
+                       streamPrefix #= stream =#::Bool
+                       parallelism #= for OpenCL/CUDA parglobal, parlocal ... =#::Parallelism
+                       variability #= parameter, constant etc. =#::Variability
+                       direction #= input/output =#::Direction
+                       isField #= non-field / field =#::IsField
+                       arrayDim #= array dimensions =#::ArrayDim
+              end
+         end
 
-  @Record ALG_CONTINUE begin
+          #= Is field =#
+         @Uniontype IsField begin
+              @Record NONFIELD begin
 
-  end
-end
-
-#= Modifications are described by the `Modification\\' type.  There
-are two forms of modifications: redeclarations and component
-modifications.
-- Modifications =#
-@Uniontype Modification begin
-  @Record CLASSMOD begin
-
-    elementArgLst::IList
-    eqMod::EqMod
-  end
-end
+              end
 
-@Uniontype EqMod begin
-  @Record NOMOD begin
+              @Record FIELD begin
 
-  end
+              end
+         end
 
-  @Record EQMOD begin
+          #= Parallelism =#
+         @Uniontype Parallelism begin
+              @Record PARGLOBAL begin
 
-    exp::Exp
-    info::Info
-  end
-end
-
-#= Wrapper for things that modify elements, modifications and redeclarations =#
-@Uniontype ElementArg begin
-  @Record MODIFICATION begin
-
-    finalPrefix #= final prefix =#::Bool
-    eachPrefix #= each =#::Each
-    path::Path
-    modification #= modification =#::Option
-    comment #= comment =#::Option
-    info::Info
-  end
+              end
 
-  @Record REDECLARATION begin
-
-    finalPrefix #= final prefix =#::Bool
-    redeclareKeywords #= redeclare  or replaceable  =#::RedeclareKeywords
-    eachPrefix #= each prefix =#::Each
-    elementSpec #= elementSpec =#::ElementSpec
-    constrainClass #= class definition or declaration =#::Option
-    info #= needed because ElementSpec does not contain this info; Element does =#::Info
-  end
-end
+              @Record PARLOCAL begin
 
-#= The keywords redeclare and replacable can be given in three different kombinations, each one by themself or the both combined. =#
-@Uniontype RedeclareKeywords begin
-  @Record REDECLARE begin
+              end
 
-  end
+              @Record NON_PARALLEL begin
 
-  @Record REPLACEABLE begin
+              end
+         end
 
-  end
+         @Uniontype FlowStream begin
+              @Record FLOW begin
 
-  @Record REDECLARE_REPLACEABLE begin
+              end
 
-  end
-end
+              @Record STREAM begin
 
-#= The each keyword can be present in both MODIFICATION\\'s and REDECLARATION\\'s.
-- Each attribute =#
-@Uniontype Each begin
-  @Record EACH begin
+              end
 
-  end
+              @Record NOT_FLOW_STREAM begin
 
-  @Record NON_EACH begin
+              end
+         end
 
-  end
-end
-
-#= Element attributes =#
-@Uniontype ElementAttributes begin
-  @Record ATTR begin
-
-    flowPrefix #= flow =#::Bool
-    streamPrefix #= stream =#::Bool
-    parallelism #= for OpenCL/CUDA parglobal, parlocal ... =#::Parallelism
-    variability #= parameter, constant etc. =#::Variability
-    direction #= input/output =#::Direction
-    isField #= non-field / field =#::IsField
-    arrayDim #= array dimensions =#::ArrayDim
-  end
-end
+          #= Variability =#
+         @Uniontype Variability begin
+              @Record VAR begin
 
-#= Is field =#
-@Uniontype IsField begin
-  @Record NONFIELD begin
+              end
 
-  end
+              @Record DISCRETE begin
 
-  @Record FIELD begin
+              end
 
-  end
-end
+              @Record PARAM begin
 
-#= Parallelism =#
-@Uniontype Parallelism begin
-  @Record PARGLOBAL begin
+              end
 
-  end
+              @Record CONST begin
 
-  @Record PARLOCAL begin
+              end
+         end
 
-  end
+          #= Direction =#
+         @Uniontype Direction begin
+              @Record INPUT begin
 
-  @Record NON_PARALLEL begin
+              end
 
-  end
-end
+              @Record OUTPUT begin
 
-@Uniontype FlowStream begin
-  @Record FLOW begin
+              end
 
-  end
+              @Record BIDIR begin
 
-  @Record STREAM begin
+              end
 
-  end
+              @Record INPUT_OUTPUT begin
 
-  @Record NOT_FLOW_STREAM begin
+              end
+         end
 
-  end
-end
+          #= The Exp uniontype is the container of a Modelica expression.
+           - Expressions =#
+         @Uniontype Exp begin
+              @Record INTEGER begin
 
-#= Variability =#
-@Uniontype Variability begin
-  @Record VAR begin
+                       value::ModelicaInteger
+              end
 
-  end
+              @Record REAL begin
 
-  @Record DISCRETE begin
+                       value #= String representation of a Real, in order to unparse without changing the user's display preference =#::String
+              end
 
-  end
+              @Record CREF begin
 
-  @Record PARAM begin
+                       componentRef::ComponentRef
+              end
 
-  end
+              @Record STRING begin
 
-  @Record CONST begin
+                       value::String
+              end
 
-  end
-end
+              @Record BOOL begin
 
-#= Direction =#
-@Uniontype Direction begin
-  @Record INPUT begin
+                       value::Bool
+              end
 
-  end
+              @Record BINARY begin
 
-  @Record OUTPUT begin
+                       exp1::Exp
+                       op::Operator
+                       exp2::Exp
+              end
 
-  end
+              @Record UNARY begin
 
-  @Record BIDIR begin
+                       op #= op =#::Operator
+                       exp #= exp - any arithmetic expression =#::Exp
+              end
 
-  end
+              @Record LBINARY begin
 
-  @Record INPUT_OUTPUT begin
+                       exp1 #= exp1 =#::Exp
+                       op #= op =#::Operator
+                       exp2::Exp
+              end
 
-  end
-end
+              @Record LUNARY begin
 
-#= The Exp uniontype is the container of a Modelica expression.
-- Expressions =#
-@Uniontype Exp begin
-  @Record INTEGER begin
+                       op #= op =#::Operator
+                       exp #= exp - any logical or relation expression =#::Exp
+              end
 
-    value::ModelicaInteger
-  end
+              @Record RELATION begin
 
-  @Record REAL begin
+                       exp1 #= exp1 =#::Exp
+                       op #= op =#::Operator
+                       exp2::Exp
+              end
 
-    value #= String representation of a Real, in order to unparse without changing the user's display preference =#::String
-  end
+              @Record IFEXP begin
 
-  @Record CREF begin
+                       ifExp #= ifExp =#::Exp
+                       trueBranch #= trueBranch =#::Exp
+                       elseBranch #= elseBranch =#::Exp
+                       elseIfBranch #= elseIfBranch Function calls =#::List{Tuple{Exp, Exp}}
+              end
 
-    componentRef::ComponentRef
-  end
+              @Record CALL begin
 
-  @Record STRING begin
+                       function_ #= function =#::ComponentRef
+                       functionArgs::FunctionArgs
+              end
 
-    value::String
-  end
+               #=  stefan
+               =#
 
-  @Record BOOL begin
+              @Record PARTEVALFUNCTION begin
 
-    value::Bool
-  end
+                       function_ #= function =#::ComponentRef
+                       functionArgs::FunctionArgs
+              end
 
-  @Record BINARY begin
+              @Record ARRAY begin
 
-    exp1::Exp
-    op::Operator
-    exp2::Exp
-  end
+                       arrayExp::List{Exp}
+              end
 
-  @Record UNARY begin
+              @Record MATRIX begin
 
-    op #= op =#::Operator
-    exp #= exp - any arithmetic expression =#::Exp
-  end
+                       matrix::List{List{Exp}}
+              end
 
-  @Record LBINARY begin
+              @Record RANGE begin
 
-    exp1 #= exp1 =#::Exp
-    op #= op =#::Operator
-    exp2::Exp
-  end
+                       start #= start =#::Exp
+                       step #= step =#::Option{Exp}
+                       stop #= stop =#::Exp
+              end
 
-  @Record LUNARY begin
+              @Record TUPLE begin
 
-    op #= op =#::Operator
-    exp #= exp - any logical or relation expression =#::Exp
-  end
+                       expressions #= comma-separated expressions =#::List{Exp}
+              end
 
-  @Record RELATION begin
+              @Record END begin
 
-    exp1 #= exp1 =#::Exp
-    op #= op =#::Operator
-    exp2::Exp
-  end
+              end
 
-  @Record IFEXP begin
+              @Record CODE begin
 
-    ifExp #= ifExp =#::Exp
-    trueBranch #= trueBranch =#::Exp
-    elseBranch #= elseBranch =#::Exp
-    elseIfBranch #= elseIfBranch Function calls =#::IList
-  end
+                       code::CodeNode
+              end
 
-  @Record CALL begin
+               #=  MetaModelica expressions follow below!
+               =#
 
-    function_ #= function =#::ComponentRef
-    functionArgs::FunctionArgs
-  end
+              @Record AS begin
 
-  #=  stefan
-  =#
+                       id #=  only an id  =#::Ident
+                       exp #=  expression to bind to the id  =#::Exp
+              end
 
-  @Record PARTEVALFUNCTION begin
+              @Record CONS begin
 
-    function_ #= function =#::ComponentRef
-    functionArgs::FunctionArgs
-  end
+                       head #=  head of the list  =#::Exp
+                       rest #=  rest of the list  =#::Exp
+              end
 
-  @Record ARRAY begin
+              @Record MATCHEXP begin
 
-    arrayExp::IList
-  end
+                       matchTy #=  match or matchcontinue       =#::MatchType
+                       inputExp #=  match expression of          =#::Exp
+                       localDecls #=  local declarations           =#::List{ElementItem}
+                       cases #=  case list + else in the end  =#::List{Case}
+                       comment #=  match expr comment_optional  =#::Option{String}
+              end
 
-  @Record MATRIX begin
+               #=  The following are only used internally in the compiler
+               =#
 
-    matrix::IList
-  end
+              @Record LIST begin
 
-  @Record RANGE begin
+                       exps::List{Exp}
+              end
 
-    start #= start =#::Exp
-    step #= step =#::Option
-    stop #= stop =#::Exp
-  end
+              @Record DOT begin
 
-  @Record TUPLE begin
+                       exp::Exp
+                       index::Exp
+              end
+         end
 
-    expressions #= comma-separated expressions =#::IList
-  end
+          #= case in match or matchcontinue =#
+         @Uniontype Case begin
+              @Record CASE begin
 
-  @Record END begin
+                       pattern #=  patterns to be matched  =#::Exp
+                       patternGuard::Option{Exp}
+                       patternInfo #= file information of the pattern =#::Info
+                       localDecls #=  local decls  =#::List{ElementItem}
+                       classPart #=  equation or algorithm section  =#::ClassPart
+                       result #=  result  =#::Exp
+                       resultInfo #= file information of the result-exp =#::Info
+                       comment #=  comment after case like: case pattern string_comment  =#::Option{String}
+                       info #= file information of the whole case =#::Info
+              end
 
-  end
+              @Record ELSE begin
 
-  @Record CODE begin
+                       localDecls #=  local decls  =#::List{ElementItem}
+                       classPart #=  equation or algorithm section  =#::ClassPart
+                       result #=  result  =#::Exp
+                       resultInfo #= file information of the result-exp =#::Info
+                       comment #=  comment after case like: case pattern string_comment  =#::Option{String}
+                       info #= file information of the whole case =#::Info
+              end
+         end
 
-    code::CodeNode
-  end
+         @Uniontype MatchType begin
+              @Record MATCH begin
 
-  #=  MetaModelica expressions follow below!
-  =#
+              end
 
-  @Record AS begin
+              @Record MATCHCONTINUE begin
 
-    id #=  only an id  =#::Ident
-    exp #=  expression to bind to the id  =#::Exp
-  end
+              end
+         end
 
-  @Record CONS begin
+          #= The Code uniontype is used for Meta-programming. It originates from the $Code quoting mechanism. See paper in Modelica2003 conference =#
+         @Uniontype CodeNode begin
+              @Record C_TYPENAME begin
 
-    head #=  head of the list  =#::Exp
-    rest #=  rest of the list  =#::Exp
-  end
+                       path::Path
+              end
 
-  @Record MATCHEXP begin
+              @Record C_VARIABLENAME begin
 
-    matchTy #=  match or matchcontinue       =#::MatchType
-    inputExp #=  match expression of          =#::Exp
-    localDecls #=  local declarations           =#::IList
-    cases #=  case list + else in the end  =#::IList
-    comment #=  match expr comment_optional  =#::Option
-  end
+                       componentRef::ComponentRef
+              end
 
-  #=  The following are only used internally in the compiler
-  =#
+              @Record C_CONSTRAINTSECTION begin
 
-  @Record LIST begin
+                       boolean::Bool
+                       equationItemLst::List{EquationItem}
+              end
 
-    exps::IList
-  end
+              @Record C_EQUATIONSECTION begin
 
-  @Record DOT begin
+                       boolean::Bool
+                       equationItemLst::List{EquationItem}
+              end
 
-    exp::Exp
-    index::Exp
-  end
-end
-
-#= case in match or matchcontinue =#
-@Uniontype Case begin
-  @Record CASE begin
-
-    pattern #=  patterns to be matched  =#::Exp
-    patternGuard::Option
-    patternInfo #= file information of the pattern =#::Info
-    localDecls #=  local decls  =#::IList
-    classPart #=  equation or algorithm section  =#::ClassPart
-    result #=  result  =#::Exp
-    resultInfo #= file information of the result-exp =#::Info
-    comment #=  comment after case like: case pattern string_comment  =#::Option
-    info #= file information of the whole case =#::Info
-  end
+              @Record C_ALGORITHMSECTION begin
 
-  @Record ELSE begin
-
-    localDecls #=  local decls  =#::IList
-    classPart #=  equation or algorithm section  =#::ClassPart
-    result #=  result  =#::Exp
-    resultInfo #= file information of the result-exp =#::Info
-    comment #=  comment after case like: case pattern string_comment  =#::Option
-    info #= file information of the whole case =#::Info
-  end
-end
+                       boolean::Bool
+                       algorithmItemLst::List{AlgorithmItem}
+              end
 
-@Uniontype MatchType begin
-  @Record MATCH begin
+              @Record C_ELEMENT begin
 
-  end
+                       element::Element
+              end
 
-  @Record MATCHCONTINUE begin
+              @Record C_EXPRESSION begin
 
-  end
-end
+                       exp::Exp
+              end
 
-#= The Code uniontype is used for Meta-programming. It originates from the Code quoting mechanism. See paper in Modelica2003 conference =#
-@Uniontype CodeNode begin
-  @Record C_TYPENAME begin
+              @Record C_MODIFICATION begin
 
-    path::Path
-  end
+                       modification::Modification
+              end
+         end
 
-  @Record C_VARIABLENAME begin
+          #= The FunctionArgs uniontype consists of a list of positional arguments
+           followed by a list of named arguments (Modelica v2.0) =#
+         @Uniontype FunctionArgs begin
+              @Record FUNCTIONARGS begin
 
-    componentRef::ComponentRef
-  end
+                       args #= args =#::List{Exp}
+                       argNames #= argNames =#::List{NamedArg}
+              end
 
-  @Record C_CONSTRAINTSECTION begin
+              @Record FOR_ITER_FARG begin
 
-    boolean::Bool
-    equationItemLst::IList
-  end
+                       exp #= iterator expression =#::Exp
+                       iterType::ReductionIterType
+                       iterators::ForIterators
+              end
+         end
 
-  @Record C_EQUATIONSECTION begin
+         emptyFunctionArgs = FUNCTIONARGS(list(), list())::FunctionArgs
 
-    boolean::Bool
-    equationItemLst::IList
-  end
+         @Uniontype ReductionIterType begin
+              @Record COMBINE begin
 
-  @Record C_ALGORITHMSECTION begin
+              end
 
-    boolean::Bool
-    algorithmItemLst::IList
-  end
+              @Record THREAD begin
 
-  @Record C_ELEMENT begin
+              end
+         end
 
-    element::Element
-  end
+          #= The NamedArg uniontype consist of an Identifier for the argument and an expression
+           giving the value of the argument =#
+         @Uniontype NamedArg begin
+              @Record NAMEDARG begin
 
-  @Record C_EXPRESSION begin
+                       argName #= argName =#::Ident
+                       argValue #= argValue =#::Exp
+              end
+         end
 
-    exp::Exp
-  end
+          #= Expression operators =#
+         @Uniontype Operator begin
+               #= /* arithmetic operators */ =#
 
-  @Record C_MODIFICATION begin
+              @Record ADD begin
 
-    modification::Modification
-  end
-end
-
-#= The FunctionArgs uniontype consists of a list of positional arguments
-followed by a list of named arguments (Modelica v2.0) =#
-@Uniontype FunctionArgs begin
-  @Record FUNCTIONARGS begin
-
-    args #= args =#::IList
-    argNames #= argNames =#::IList
-  end
+              end
 
-  @Record FOR_ITER_FARG begin
+              @Record SUB begin
 
-    exp #= iterator expression =#::Exp
-    iterType::ReductionIterType
-    iterators::ForIterators
-  end
-end
+              end
 
-emptyFunctionArgs = FUNCTIONARGS(list(), list())::FunctionArgs
+              @Record MUL begin
 
-@Uniontype ReductionIterType begin
-  @Record COMBINE begin
+              end
 
-  end
+              @Record DIV begin
 
-  @Record THREAD begin
+              end
 
-  end
-end
-
-#= The NamedArg uniontype consist of an Identifier for the argument and an expression
-giving the value of the argument =#
-@Uniontype NamedArg begin
-  @Record NAMEDARG begin
-
-    argName #= argName =#::Ident
-    argValue #= argValue =#::Exp
-  end
-end
+              @Record POW begin
 
-#= Expression operators =#
-@Uniontype Operator begin
-  #= /* arithmetic operators */ =#
+              end
 
-  @Record ADD begin
+              @Record UPLUS begin
 
-  end
+              end
 
-  @Record SUB begin
+              @Record UMINUS begin
 
-  end
+              end
 
-  @Record MUL begin
+               #= /* element-wise arithmetic operators */ =#
 
-  end
+              @Record ADD_EW begin
 
-  @Record DIV begin
+              end
 
-  end
+              @Record SUB_EW begin
 
-  @Record POW begin
+              end
 
-  end
+              @Record MUL_EW begin
 
-  @Record UPLUS begin
+              end
 
-  end
+              @Record DIV_EW begin
 
-  @Record UMINUS begin
+              end
 
-  end
+              @Record POW_EW begin
 
-  #= /* element-wise arithmetic operators */ =#
+              end
 
-  @Record ADD_EW begin
+              @Record UPLUS_EW begin
 
-  end
+              end
 
-  @Record SUB_EW begin
+              @Record UMINUS_EW begin
 
-  end
+              end
 
-  @Record MUL_EW begin
+               #= /* logical operators */ =#
 
-  end
+              @Record AND begin
 
-  @Record DIV_EW begin
+              end
 
-  end
+              @Record OR begin
 
-  @Record POW_EW begin
+              end
 
-  end
+              @Record NOT begin
 
-  @Record UPLUS_EW begin
+              end
 
-  end
+               #= /* relational operators */ =#
 
-  @Record UMINUS_EW begin
+              @Record LESS begin
 
-  end
+              end
 
-  #= /* logical operators */ =#
+              @Record LESSEQ begin
 
-  @Record AND begin
+              end
 
-  end
+              @Record GREATER begin
 
-  @Record OR begin
+              end
 
-  end
+              @Record GREATEREQ begin
 
-  @Record NOT begin
+              end
 
-  end
+              @Record EQUAL begin
 
-  #= /* relational operators */ =#
+              end
 
-  @Record LESS begin
+              @Record NEQUAL begin
 
-  end
+              end
+         end
 
-  @Record LESSEQ begin
+          #= The Subscript uniontype is used both in array declarations and
+           component references.  This might seem strange, but it is
+           inherited from the grammar.  The NOSUB constructor means that
+           the dimension size is undefined when used in a declaration, and
+           when it is used in a component reference it means a slice of the
+           whole dimension.
+           - Subscripts =#
+         @Uniontype Subscript begin
+              @Record NOSUB begin
 
-  end
+              end
 
-  @Record GREATER begin
+              @Record SUBSCRIPT begin
 
-  end
+                       subscript #= subscript =#::Exp
+              end
+         end
 
-  @Record GREATEREQ begin
+          #= A component reference is the fully or partially qualified name of
+           a component.  It is represented as a list of
+           identifier--subscript pairs.
+           - Component references and paths =#
+         @Uniontype ComponentRef begin
+              @Record CREF_FULLYQUALIFIED begin
 
-  end
+                       componentRef::ComponentRef
+              end
 
-  @Record EQUAL begin
+              @Record CREF_QUAL begin
 
-  end
+                       name #= name =#::Ident
+                       subscripts #= subscripts =#::List{Subscript}
+                       componentRef #= componentRef =#::ComponentRef
+              end
 
-  @Record NEQUAL begin
+              @Record CREF_IDENT begin
 
-  end
-end
-
-#= The Subscript uniontype is used both in array declarations and
-component references.  This might seem strange, but it is
-inherited from the grammar.  The NOSUB constructor means that
-the dimension size is undefined when used in a declaration, and
-when it is used in a component reference it means a slice of the
-whole dimension.
-- Subscripts =#
-@Uniontype Subscript begin
-  @Record NOSUB begin
+                       name #= name =#::Ident
+                       subscripts #= subscripts =#::List{Subscript}
+              end
 
-  end
+              @Record WILD begin
 
-  @Record SUBSCRIPT begin
+              end
 
-    subscript #= subscript =#::Exp
-  end
-end
-
-#= A component reference is the fully or partially qualified name of
-a component.  It is represented as a list of
-identifier--subscript pairs.
-- Component references and paths =#
-@Uniontype ComponentRef begin
-  @Record CREF_FULLYQUALIFIED begin
-
-    componentRef::ComponentRef
-  end
+              @Record ALLWILD begin
 
-  @Record CREF_QUAL begin
+              end
+         end
 
-    name #= name =#::Ident
-    subscripts #= subscripts =#::IList
-    componentRef #= componentRef =#::ComponentRef
-  end
+          #= The type `Path\\', on the other hand,
+           is used to store references to class names, or names inside
+           class definitions. =#
+         @Uniontype Path begin
+              @Record QUALIFIED begin
 
-  @Record CREF_IDENT begin
+                       name #= name =#::Ident
+                       path #= path =#::Path
+              end
 
-    name #= name =#::Ident
-    subscripts #= subscripts =#::IList
-  end
+              @Record IDENT begin
 
-  @Record WILD begin
+                       name #= name =#::Ident
+              end
 
-  end
+              @Record FULLYQUALIFIED begin
 
-  @Record ALLWILD begin
+                       path::Path
+              end
+         end
 
-  end
-end
-
-#= The type `Path\\', on the other hand,
-is used to store references to class names, or names inside
-class definitions. =#
-@Uniontype Path begin
-  @Record QUALIFIED begin
-
-    name #= name =#::Ident
-    path #= path =#::Path
-  end
+          #= These constructors each correspond to a different kind of class
+           declaration in Modelica, except the last four, which are used
+           for the predefined types.  The parser assigns each class
+           declaration one of the restrictions, and the actual class
+           definition is checked for conformance during translation.  The
+           predefined types are created in the Builtin module and are
+           assigned special restrictions.
+           =#
+         @Uniontype Restriction begin
+              @Record R_CLASS begin
 
-  @Record IDENT begin
+              end
 
-    name #= name =#::Ident
-  end
+              @Record R_OPTIMIZATION begin
 
-  @Record FULLYQUALIFIED begin
+              end
 
-    path::Path
-  end
-end
-
-#= These constructors each correspond to a different kind of class
-declaration in Modelica, except the last four, which are used
-for the predefined types.  The parser assigns each class
-declaration one of the restrictions, and the actual class
-definition is checked for conformance during translation.  The
-predefined types are created in the Builtin module and are
-assigned special restrictions.
-=#
-@Uniontype Restriction begin
-  @Record R_CLASS begin
+              @Record R_MODEL begin
 
-  end
+              end
 
-  @Record R_OPTIMIZATION begin
+              @Record R_RECORD begin
 
-  end
+              end
 
-  @Record R_MODEL begin
+              @Record R_BLOCK begin
 
-  end
+              end
 
-  @Record R_RECORD begin
+              @Record R_CONNECTOR begin
 
-  end
+              end
 
-  @Record R_BLOCK begin
+              @Record R_EXP_CONNECTOR begin
 
-  end
+              end
 
-  @Record R_CONNECTOR begin
+              @Record R_TYPE begin
 
-  end
+              end
 
-  @Record R_EXP_CONNECTOR begin
+              @Record R_PACKAGE begin
 
-  end
+              end
 
-  @Record R_TYPE begin
+              @Record R_FUNCTION begin
 
-  end
+                       functionRestriction::FunctionRestriction
+              end
 
-  @Record R_PACKAGE begin
+              @Record R_OPERATOR begin
 
-  end
+              end
 
-  @Record R_FUNCTION begin
+              @Record R_OPERATOR_RECORD begin
 
-    functionRestriction::FunctionRestriction
-  end
+              end
 
-  @Record R_OPERATOR begin
+              @Record R_ENUMERATION begin
 
-  end
+              end
 
-  @Record R_OPERATOR_RECORD begin
+              @Record R_PREDEFINED_INTEGER begin
 
-  end
+              end
 
-  @Record R_ENUMERATION begin
+              @Record R_PREDEFINED_REAL begin
 
-  end
+              end
 
-  @Record R_PREDEFINED_INTEGER begin
+              @Record R_PREDEFINED_STRING begin
 
-  end
+              end
 
-  @Record R_PREDEFINED_REAL begin
+              @Record R_PREDEFINED_BOOLEAN begin
 
-  end
+              end
 
-  @Record R_PREDEFINED_STRING begin
+              @Record R_PREDEFINED_ENUMERATION begin
 
-  end
+              end
 
-  @Record R_PREDEFINED_BOOLEAN begin
+               #=  BTH
+               =#
 
-  end
+              @Record R_PREDEFINED_CLOCK begin
 
-  @Record R_PREDEFINED_ENUMERATION begin
+              end
 
-  end
+               #=  MetaModelica
+               =#
 
-  #=  BTH
-  =#
+              @Record R_UNIONTYPE begin
 
-  @Record R_PREDEFINED_CLOCK begin
+              end
 
-  end
+              @Record R_METARECORD begin
 
-  #=  MetaModelica
-  =#
+                       #= MetaModelica extension, added by simbj
+                       =#
+                       name::Path
+                       #= Name of the uniontype
+                       =#
+                       index::ModelicaInteger
+                       #= Index in the uniontype
+                       =#
+                       singleton::Bool
+                       moved::Bool
+                       #=  true if moved outside uniontype, otherwise false.
+                       =#
+                       typeVars::List{String}
+              end
 
-  @Record R_UNIONTYPE begin
+              @Record R_UNKNOWN begin
 
-  end
+              end
 
-  @Record R_METARECORD begin
-
-    #= MetaModelica extension, added by simbj
-    =#
-    name::Path
-    #= Name of the uniontype
-    =#
-    index::ModelicaInteger
-    #= Index in the uniontype
-    =#
-    singleton::Bool
-    moved::Bool
-    #=  true if moved outside uniontype, otherwise false.
-    =#
-    typeVars::IList
-  end
+               #= /* added by simbj */ =#
+         end
 
-  @Record R_UNKNOWN begin
+          #= function purity =#
+         @Uniontype FunctionPurity begin
+              @Record PURE begin
 
-  end
+              end
 
-  #= /* added by simbj */ =#
-end
+              @Record IMPURE begin
 
-#= function purity =#
-@Uniontype FunctionPurity begin
-  @Record PURE begin
+              end
 
-  end
+              @Record NO_PURITY begin
 
-  @Record IMPURE begin
+              end
+         end
 
-  end
+         @Uniontype FunctionRestriction begin
+              @Record FR_NORMAL_FUNCTION begin
 
-  @Record NO_PURITY begin
+                       purity #= function purity =#::FunctionPurity
+              end
 
-  end
-end
+              @Record FR_OPERATOR_FUNCTION begin
 
-@Uniontype FunctionRestriction begin
-  @Record FR_NORMAL_FUNCTION begin
+              end
 
-    purity #= function purity =#::FunctionPurity
-  end
+              @Record FR_PARALLEL_FUNCTION begin
 
-  @Record FR_OPERATOR_FUNCTION begin
+              end
 
-  end
+              @Record FR_KERNEL_FUNCTION begin
 
-  @Record FR_PARALLEL_FUNCTION begin
+              end
+         end
 
-  end
+          #= An Annotation is a class_modification.
+           - Annotation =#
+         @Uniontype Annotation begin
+              @Record ANNOTATION begin
 
-  @Record FR_KERNEL_FUNCTION begin
+                       elementArgs #= elementArgs =#::List{ElementArg}
+              end
+         end
 
-  end
-end
+          #= Comment =#
+         @Uniontype Comment begin
+              @Record COMMENT begin
 
-#= An Annotation is a class_modification.
-- Annotation =#
-@Uniontype Annotation begin
-  @Record ANNOTATION begin
+                       annotation_ #= annotation =#::Option{Annotation}
+                       comment #= comment =#::Option{String}
+              end
+         end
 
-    elementArgs #= elementArgs =#::IList
-  end
-end
+          #= Declaration of an external function call - ExternalDecl =#
+         @Uniontype ExternalDecl begin
+              @Record EXTERNALDECL begin
 
-#= Comment =#
-@Uniontype Comment begin
-  @Record COMMENT begin
+                       funcName #= The name of the external function =#::Option{Ident}
+                       lang #= Language of the external function =#::Option{String}
+                       output_ #= output parameter as return value =#::Option{ComponentRef}
+                       args #= only positional arguments, i.e. expression list =#::List{Exp}
+                       annotation_::Option{Annotation}
+              end
+         end
 
-    annotation_ #= annotation =#::Option
-    comment #= comment =#::Option
-  end
-end
-
-#= Declaration of an external function call - ExternalDecl =#
-@Uniontype ExternalDecl begin
-  @Record EXTERNALDECL begin
-
-    funcName #= The name of the external function =#::Option
-    lang #= Language of the external function =#::Option
-    output_ #= output parameter as return value =#::Option
-    args #= only positional arguments, i.e. expression list =#::IList
-    annotation_::Option
-  end
-end
+         @Uniontype Ref begin
+              @Record RCR begin
 
-@Uniontype Ref begin
-  @Record RCR begin
+                       cr::ComponentRef
+              end
 
-    cr::ComponentRef
-  end
+              @Record RTS begin
 
-  @Record RTS begin
+                       ts::TypeSpec
+              end
 
-    ts::TypeSpec
-  end
+              @Record RIM begin
 
-  @Record RIM begin
+                       im::Import
+              end
+         end
 
-    im::Import
-  end
-end
+          #= Controls output of error-messages =#
+         @Uniontype Msg begin
+              @Record MSG begin
 
-#= Controls output of error-messages =#
-@Uniontype Msg begin
-  @Record MSG begin
+                       info::Info
+              end
 
-    info::Info
-  end
+              @Record NO_MSG begin
 
-  @Record NO_MSG begin
+              end
+         end
 
+    #= So that we can use wildcard imports and named imports when they do occur. Not good Julia practice =#
+    @exportAll()
   end
-end
-
-#= So that we can use wildcard imports and named imports when they do occur. Not good Julia practice =#
-@exportAll()
-end
