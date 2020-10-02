@@ -1,4 +1,4 @@
-  module Absyn 
+  module Absyn
 
 
     using MetaModelica
@@ -6,58 +6,58 @@
     using ExportAll
     #= Necessary to write declarations for your uniontypes until Julia adds support for mutually recursive types =#
 
-    @UniontypeDecl ForIterator 
-    @UniontypeDecl Program 
-    @UniontypeDecl Within 
-    @UniontypeDecl Class 
-    @UniontypeDecl ClassDef 
-    @UniontypeDecl TypeSpec 
-    @UniontypeDecl EnumDef 
-    @UniontypeDecl EnumLiteral 
-    @UniontypeDecl ClassPart 
-    @UniontypeDecl ElementItem 
-    @UniontypeDecl Element 
-    @UniontypeDecl ConstrainClass 
-    @UniontypeDecl ElementSpec 
-    @UniontypeDecl InnerOuter 
-    @UniontypeDecl Import 
-    @UniontypeDecl GroupImport 
-    @UniontypeDecl ComponentItem 
-    @UniontypeDecl Component 
-    @UniontypeDecl EquationItem 
-    @UniontypeDecl AlgorithmItem 
-    @UniontypeDecl Equation 
-    @UniontypeDecl Algorithm 
-    @UniontypeDecl Modification 
-    @UniontypeDecl EqMod 
-    @UniontypeDecl ElementArg 
-    @UniontypeDecl RedeclareKeywords 
-    @UniontypeDecl Each 
-    @UniontypeDecl ElementAttributes 
-    @UniontypeDecl IsField 
-    @UniontypeDecl Parallelism 
-    @UniontypeDecl FlowStream 
-    @UniontypeDecl Variability 
-    @UniontypeDecl Direction 
-    @UniontypeDecl Exp 
-    @UniontypeDecl Case 
-    @UniontypeDecl MatchType 
-    @UniontypeDecl CodeNode 
-    @UniontypeDecl FunctionArgs 
-    @UniontypeDecl ReductionIterType 
-    @UniontypeDecl NamedArg 
-    @UniontypeDecl Operator 
-    @UniontypeDecl Subscript 
-    @UniontypeDecl ComponentRef 
-    @UniontypeDecl Path 
-    @UniontypeDecl Restriction 
-    @UniontypeDecl FunctionPurity 
-    @UniontypeDecl FunctionRestriction 
-    @UniontypeDecl Annotation 
-    @UniontypeDecl Comment 
-    @UniontypeDecl ExternalDecl 
-    @UniontypeDecl Ref 
-    @UniontypeDecl Msg 
+    @UniontypeDecl ForIterator
+    @UniontypeDecl Program
+    @UniontypeDecl Within
+    @UniontypeDecl Class
+    @UniontypeDecl ClassDef
+    @UniontypeDecl TypeSpec
+    @UniontypeDecl EnumDef
+    @UniontypeDecl EnumLiteral
+    @UniontypeDecl ClassPart
+    @UniontypeDecl ElementItem
+    @UniontypeDecl Element
+    @UniontypeDecl ConstrainClass
+    @UniontypeDecl ElementSpec
+    @UniontypeDecl InnerOuter
+    @UniontypeDecl Import
+    @UniontypeDecl GroupImport
+    @UniontypeDecl ComponentItem
+    @UniontypeDecl Component
+    @UniontypeDecl EquationItem
+    @UniontypeDecl AlgorithmItem
+    @UniontypeDecl Equation
+    @UniontypeDecl Algorithm
+    @UniontypeDecl Modification
+    @UniontypeDecl EqMod
+    @UniontypeDecl ElementArg
+    @UniontypeDecl RedeclareKeywords
+    @UniontypeDecl Each
+    @UniontypeDecl ElementAttributes
+    @UniontypeDecl IsField
+    @UniontypeDecl Parallelism
+    @UniontypeDecl FlowStream
+    @UniontypeDecl Variability
+    @UniontypeDecl Direction
+    @UniontypeDecl Exp
+    @UniontypeDecl Case
+    @UniontypeDecl MatchType
+    @UniontypeDecl CodeNode
+    @UniontypeDecl FunctionArgs
+    @UniontypeDecl ReductionIterType
+    @UniontypeDecl NamedArg
+    @UniontypeDecl Operator
+    @UniontypeDecl Subscript
+    @UniontypeDecl ComponentRef
+    @UniontypeDecl Path
+    @UniontypeDecl Restriction
+    @UniontypeDecl FunctionPurity
+    @UniontypeDecl FunctionRestriction
+    @UniontypeDecl Annotation
+    @UniontypeDecl Comment
+    @UniontypeDecl ExternalDecl
+    @UniontypeDecl Ref
+    @UniontypeDecl Msg
 
          #= /*
          * This file is part of OpenModelica.
@@ -141,7 +141,7 @@
               end
          end
 
-        Info = SourceInfo 
+        Info = SourceInfo
 
           #= A class definition consists of a name, a flag to indicate
            if this class is declared as partial, the declared class restriction,
@@ -342,6 +342,7 @@
 
                        name::Ident
                        args::List{NamedArg}
+                       info::Info
               end
 
               @Record TEXT begin
