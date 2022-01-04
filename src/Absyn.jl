@@ -38,7 +38,7 @@ using MetaModelica
 using ExportAll
   #= Necessary to write declarations for your uniontypes until Julia adds support for mutually recursive types =#
 
-  @UniontypeDecl ForIterator
+@UniontypeDecl ForIterator
 @UniontypeDecl Program
 @UniontypeDecl Within
 @UniontypeDecl Class
@@ -167,7 +167,6 @@ and an optional array dimension and a list of modifications.
 =#
 @Uniontype ClassDef begin
   @Record PARTS begin
-
     typeVars #= class A<B,C> ... has type variables B,C =#::List{String}
     classAttrs #= optimization Op (objective=...) end Op. A list arguments attributing a
     class declaration. Currently used only for Optimica extensions =#::List{NamedArg}
@@ -177,7 +176,6 @@ and an optional array dimension and a list of modifications.
   end
 
   @Record DERIVED begin
-
     typeSpec #= typeSpec specification includes array dimensions =#::TypeSpec
     attributes::ElementAttributes
     arguments::List{ElementArg}
@@ -185,7 +183,6 @@ and an optional array dimension and a list of modifications.
   end
 
   @Record ENUMERATION begin
-
     enumLiterals::EnumDef
     comment::Option{Comment}
   end
@@ -197,7 +194,6 @@ and an optional array dimension and a list of modifications.
   end
 
   @Record CLASS_EXTENDS begin
-
     baseClassName #= name of class to extend =#::Ident
     modifications #= modifications to be applied to the base class =#::List{ElementArg}
     comment #= comment =#::Option{String}
@@ -206,7 +202,6 @@ and an optional array dimension and a list of modifications.
   end
 
   @Record PDER begin
-
     functionName::Path
     vars #= derived variables =#::List{Ident}
     comment #= comment =#::Option{Comment}
@@ -225,13 +220,11 @@ of a component or a type definition.
 #= ModExtension: new MetaModelica type specification! =#
 @Uniontype TypeSpec begin
   @Record TPATH begin
-
     path::Path
     arrayDim::Option{ArrayDim}
   end
 
   @Record TCOMPLEX begin
-
     path::Path
     typeSpecs::List{TypeSpec}
     arrayDim::Option{ArrayDim}
@@ -242,12 +235,10 @@ end
 or a colon, \\':\\', which defines a supertype of all enumerations =#
 @Uniontype EnumDef begin
   @Record ENUMLITERALS begin
-
     enumLiterals::List{EnumLiteral}
   end
 
   @Record ENUM_COLON begin
-
   end
 end
 
@@ -255,7 +246,6 @@ end
 Comment. =#
 @Uniontype EnumLiteral begin
   @Record ENUMLITERAL begin
-
     literal::Ident
     comment::Option{Comment}
   end
@@ -304,12 +294,10 @@ end
 #= An element item is either an element or an annotation =#
 @Uniontype ElementItem begin
   @Record ELEMENTITEM begin
-
     element::Element
   end
 
   @Record LEXER_COMMENT begin
-
     comment::String
   end
 end
@@ -318,7 +306,6 @@ end
 The basic element type in Modelica =#
 @Uniontype Element begin
   @Record ELEMENT begin
-
     finalPrefix::Bool
     redeclareKeywords #= replaceable, redeclare =#::Option{RedeclareKeywords}
     innerOuter #= inner/outer =#::InnerOuter
@@ -328,14 +315,12 @@ The basic element type in Modelica =#
   end
 
   @Record DEFINEUNIT begin
-
     name::Ident
     args::List{NamedArg}
     info::Info
   end
 
   @Record TEXT begin
-
     optName #= optName : optional name of text, e.g. model with syntax error.
     We need the name to be able to browse it... =#::Option{Ident}
     string::String
@@ -346,7 +331,6 @@ end
 #= Constraining type, must be extends =#
 @Uniontype ConstrainClass begin
   @Record CONSTRAINCLASS begin
-
     elementSpec #= must be extends =#::ElementSpec
     comment #= comment =#::Option{Comment}
   end
@@ -364,27 +348,23 @@ in the source, it is represented in the AST as
 =#
 @Uniontype ElementSpec begin
   @Record CLASSDEF begin
-
     replaceable_ #= replaceable =#::Bool
     class_ #= class =#::Class
   end
 
   @Record EXTENDS begin
-
     path #= path =#::Path
     elementArg #= elementArg =#::List{ElementArg}
     annotationOpt #= optional annotation =#::Option{Annotation}
   end
 
   @Record IMPORT begin
-
     import_ #= import =#::Import
-  comment #= comment =#::Option{Comment}
+    comment #= comment =#::Option{Comment}
     info::Info
   end
 
   @Record COMPONENTS begin
-
     attributes #= attributes =#::ElementAttributes
     typeSpec #= typeSpec =#::TypeSpec
     components #= components =#::List{ComponentItem}
@@ -395,19 +375,15 @@ end
 inner or outer element. Thus there are three disjoint possibilities. =#
 @Uniontype InnerOuter begin
   @Record INNER begin
-
   end
 
   @Record OUTER begin
-
   end
 
   @Record INNER_OUTER begin
-
   end
 
   @Record NOT_INNER_OUTER begin
-
   end
 end
 
@@ -461,7 +437,6 @@ const ComponentCondition = Exp  #= A componentItem can have a condition that mus
 #= Collection of component and an optional comment =#
 @Uniontype ComponentItem begin
   @Record COMPONENTITEM begin
-
     component #= component =#::Component
     condition #= condition =#::Option{ComponentCondition}
     comment #= comment =#::Option{Comment}
@@ -471,7 +446,6 @@ end
 #= Some kind of Modelica entity (object or variable) =#
 @Uniontype Component begin
   @Record COMPONENT begin
-
     name #= name =#::Ident
     arrayDim #= Array dimensions, if any =#::ArrayDim
     modification #= Optional modification =#::Option{Modification}
@@ -483,14 +457,12 @@ end
 This type contains the information specific to one component. =#
 @Uniontype EquationItem begin
   @Record EQUATIONITEM begin
-
     equation_ #= equation =#::Equation
     comment #= comment =#::Option{Comment}
     info #= line number =#::Info
   end
 
   @Record EQUATIONITEMCOMMENT begin
-
     comment::String
   end
 end
@@ -498,14 +470,12 @@ end
 #= Info specific for an algorithm item. =#
 @Uniontype AlgorithmItem begin
   @Record ALGORITHMITEM begin
-
     algorithm_ #= algorithm =#::Algorithm
     comment #= comment =#::Option{Comment}
     info #= line number =#::Info
   end
 
   @Record ALGORITHMITEMCOMMENT begin
-
     comment::String
   end
 end
@@ -514,7 +484,6 @@ end
 kinds of equations =#
 @Uniontype Equation begin
   @Record EQ_IF begin
-
     ifExp #= Conditional expression =#::Exp
     equationTrueItems #= true branch =#::List{EquationItem}
     elseIfBranches #= elseIfBranches =#::List{Tuple{Exp, List{EquationItem}}}
@@ -522,45 +491,38 @@ kinds of equations =#
   end
 
   @Record EQ_EQUALS begin
-
     leftSide #= leftSide =#::Exp
     rightSide #= rightSide Connect stmt =#::Exp
   end
 
   @Record EQ_PDE begin
-
     leftSide #= leftSide =#::Exp
     rightSide #= rightSide Connect stmt =#::Exp
     domain #= domain for PDEs =#::ComponentRef
   end
 
   @Record EQ_CONNECT begin
-
     connector1 #= connector1 =#::ComponentRef
     connector2 #= connector2 =#::ComponentRef
   end
 
   @Record EQ_FOR begin
-
     iterators::ForIterators
     forEquations #= forEquations =#::List{EquationItem}
   end
 
   @Record EQ_WHEN_E begin
-
     whenExp #= whenExp =#::Exp
     whenEquations #= whenEquations =#::List{EquationItem}
     elseWhenEquations #= elseWhenEquations =#::List{Tuple{Exp, List{EquationItem}}}
   end
 
   @Record EQ_NORETCALL begin
-
     functionName #= functionName =#::ComponentRef
     functionArgs #= functionArgs; fcalls without return value =#::FunctionArgs
   end
 
   @Record EQ_FAILURE begin
-
     equ::EquationItem
   end
 end
@@ -648,7 +610,6 @@ modifications.
 - Modifications =#
 @Uniontype Modification begin
   @Record CLASSMOD begin
-
     elementArgLst::List{ElementArg}
     eqMod::EqMod
   end
@@ -656,11 +617,9 @@ end
 
 @Uniontype EqMod begin
   @Record NOMOD begin
-
   end
 
   @Record EQMOD begin
-
     exp::Exp
     info::Info
   end
@@ -719,7 +678,6 @@ end
 #= Element attributes =#
 @Uniontype ElementAttributes begin
   @Record ATTR begin
-
     flowPrefix #= flow =#::Bool
     streamPrefix #= stream =#::Bool
     parallelism #= for OpenCL/CUDA parglobal, parlocal ... =#::Parallelism
@@ -727,84 +685,68 @@ end
     direction #= input/output =#::Direction
     isField #= non-field / field =#::IsField
     arrayDim #= array dimensions =#::ArrayDim
+    isMode::Bool #= Specifies if this component is a structural mode component. =#
   end
 end
 
 #= Is field =#
 @Uniontype IsField begin
   @Record NONFIELD begin
-
   end
-
   @Record FIELD begin
-
   end
 end
 
 #= Parallelism =#
 @Uniontype Parallelism begin
   @Record PARGLOBAL begin
-
   end
 
   @Record PARLOCAL begin
-
   end
 
   @Record NON_PARALLEL begin
-
   end
 end
 
 @Uniontype FlowStream begin
   @Record FLOW begin
-
   end
 
   @Record STREAM begin
-
   end
 
   @Record NOT_FLOW_STREAM begin
-
   end
 end
 
 #= Variability =#
 @Uniontype Variability begin
   @Record VAR begin
-
   end
 
   @Record DISCRETE begin
-
   end
 
   @Record PARAM begin
-
   end
 
   @Record CONST begin
-
   end
 end
 
 #= Direction =#
 @Uniontype Direction begin
   @Record INPUT begin
-
   end
 
   @Record OUTPUT begin
-
   end
 
   @Record BIDIR begin
-
   end
 
   @Record INPUT_OUTPUT begin
-
   end
 end
 
@@ -812,65 +754,54 @@ end
 - Expressions =#
 @Uniontype Exp begin
   @Record INTEGER begin
-
     value::ModelicaInteger
   end
 
   @Record REAL begin
-
-    value #= String representation of a Real, in order to unparse without changing the user's display preference =#::String
+    value::String
   end
 
   @Record CREF begin
-
     componentRef::ComponentRef
   end
 
   @Record STRING begin
-
     value::String
   end
 
   @Record BOOL begin
-
     value::Bool
   end
 
   @Record BINARY begin
-
     exp1::Exp
     op::Operator
     exp2::Exp
   end
 
   @Record UNARY begin
-
     op #= op =#::Operator
     exp #= exp - any arithmetic expression =#::Exp
   end
 
   @Record LBINARY begin
-
     exp1 #= exp1 =#::Exp
     op #= op =#::Operator
     exp2::Exp
   end
 
   @Record LUNARY begin
-
     op #= op =#::Operator
     exp #= exp - any logical or relation expression =#::Exp
   end
 
   @Record RELATION begin
-
     exp1 #= exp1 =#::Exp
     op #= op =#::Operator
     exp2::Exp
   end
 
   @Record IFEXP begin
-
     ifExp #= ifExp =#::Exp
     trueBranch #= trueBranch =#::Exp
     elseBranch #= elseBranch =#::Exp
@@ -883,43 +814,33 @@ end
     typeVars::List{Path}
   end
 
-  #=  stefan
-  =#
-
   @Record PARTEVALFUNCTION begin
-
     function_ #= function =#::ComponentRef
     functionArgs::FunctionArgs
   end
 
   @Record ARRAY begin
-
     arrayExp::List{Exp}
   end
 
   @Record MATRIX begin
-
     matrix::List{List{Exp}}
   end
 
   @Record RANGE begin
-
     start #= start =#::Exp
     step #= step =#::Option{Exp}
     stop #= stop =#::Exp
   end
 
   @Record TUPLE begin
-
     expressions #= comma-separated expressions =#::List{Exp}
   end
 
   @Record END begin
-
   end
 
   @Record CODE begin
-
     code::CodeNode
   end
 
@@ -927,19 +848,16 @@ end
   =#
 
   @Record AS begin
-
     id #=  only an id  =#::Ident
     exp #=  expression to bind to the id  =#::Exp
   end
 
   @Record CONS begin
-
     head #=  head of the list  =#::Exp
     rest #=  rest of the list  =#::Exp
   end
 
   @Record MATCHEXP begin
-
     matchTy #=  match or matchcontinue       =#::MatchType
     inputExp #=  match expression of          =#::Exp
     localDecls #=  local declarations           =#::List{ElementItem}
@@ -951,12 +869,10 @@ end
   =#
 
   @Record LIST begin
-
     exps::List{Exp}
   end
 
   @Record DOT begin
-
     exp::Exp
     index::Exp
   end
@@ -1348,7 +1264,6 @@ assigned special restrictions.
   =#
 
   @Record R_UNIONTYPE begin
-
   end
 
   @Record R_METARECORD begin
@@ -1441,17 +1356,14 @@ end
 
 @Uniontype Ref begin
   @Record RCR begin
-
     cr::ComponentRef
   end
 
   @Record RTS begin
-
     ts::TypeSpec
   end
 
   @Record RIM begin
-
     im::Import
   end
 end
