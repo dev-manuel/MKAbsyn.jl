@@ -30,7 +30,7 @@
 */ =#
 
 
-module Absyn
+module MKAbsyn
 
 
 using MetaModelica

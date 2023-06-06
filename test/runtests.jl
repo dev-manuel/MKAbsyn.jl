@@ -1,25 +1,25 @@
-module AbsynTests
+module MKAbsynTests
 using Test
 
-@testset "Absyn tests" begin
+@testset "MKAbsyn tests" begin
 
-  @testset "Compiling Absyn via wildcard" begin
-    using Absyn
+  @testset "Compiling MKAbsyn via wildcard" begin
+    using MKAbsyn
     @test_nowarn @show(PROGRAM)
   end
 
-  @testset "Test that we have Absyn.Program" begin
-    import Absyn
-    @test_nowarn @show(Absyn.PROGRAM)
+  @testset "Test that we have MKAbsyn.Program" begin
+    import MKAbsyn
+    @test_nowarn @show(MKAbsyn.PROGRAM)
   end
 
   @testset "Test Modelica style named imports" begin
-    using Absyn: PROGRAM
+    using MKAbsyn: PROGRAM
     @test_nowarn @show(PROGRAM)
   end
 
   @testset "Attempt to instantiate HelloWorld" begin
-    using Absyn
+    using MKAbsyn
     using MetaModelica
     
     @test_nowarn begin
@@ -35,4 +35,4 @@ end
 
 include("std.jl")
 
-end #= End Absyn tests =#
+end #= End MKAbsyn tests =#
