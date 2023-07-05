@@ -90,6 +90,9 @@ using ExportAll
 @UniontypeDecl ExternalDecl
 @UniontypeDecl Ref
 @UniontypeDecl Msg
+@UniontypeDecl ContextDefinitionSection
+@UniontypeDecl Context
+@UniontypeDecl ContextEquationSection
 
 const Ident = String  #= An identifier, for example a variable name =#
 
@@ -272,6 +275,28 @@ which can be declared as external C or FORTRAN functions. =#
   @Record EQUATIONS begin
     contents::List{EquationItem}
   end
+
+#=   @Record CONTEXTEQUATIONSYSTEMS begin
+    contents::List{ContextEquationSystem}
+  end
+
+  @Record CONTEXTS begin
+    contents::List{Context}
+  end =#
+
+  @Record CONTEXTDEFINITIONSECTIONS begin
+    contents::List{ContextDefinitionSection}
+  end
+
+
+  @Record CONTEXTEQUATIONSECTIONS begin
+    contents::List{ContextEquationSection}
+  end
+
+#=   @Record CONTEXT begin
+    label::String
+    condition::Exp
+  end =#
 
   @Record INITIALEQUATIONS begin
     contents::List{EquationItem}
@@ -464,6 +489,36 @@ This type contains the information specific to one component. =#
 
   @Record EQUATIONITEMCOMMENT begin
     comment::String
+  end
+end
+
+
+@Uniontype ContextDefinitionSection begin
+  @Record CONTEXTDEFINITIONSECTION begin
+    contents::List{Context}
+  end
+end
+
+#= @Uniontype ContextEquationSystem begin
+  @Record CONTEXTEQUATIONSYSTEM begin
+    label::String
+    contents::List{EquationItem}
+  end
+end
+ =#
+
+@Uniontype Context begin
+  @Record CONTEXT begin
+    label::Ident
+    condition::ComponentCondition
+  end
+end
+
+
+@Uniontype ContextEquationSection begin
+  @Record CONTEXTEQUATIONSECTION begin
+    label::Ident
+    contents::List{EquationItem}
   end
 end
 
