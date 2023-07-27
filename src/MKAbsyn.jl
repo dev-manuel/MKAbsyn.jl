@@ -90,9 +90,7 @@ using ExportAll
 @UniontypeDecl ExternalDecl
 @UniontypeDecl Ref
 @UniontypeDecl Msg
-@UniontypeDecl ContextDefinitionSection
-@UniontypeDecl Context
-@UniontypeDecl ContextEquationSection
+@UniontypeDecl ContextDefinition
 
 const Ident = String  #= An identifier, for example a variable name =#
 
@@ -276,21 +274,15 @@ which can be declared as external C or FORTRAN functions. =#
     contents::List{EquationItem}
   end
 
-#=   @Record CONTEXTEQUATIONSYSTEMS begin
-    contents::List{ContextEquationSystem}
-  end
 
-  @Record CONTEXTS begin
-    contents::List{Context}
-  end =#
-
-  @Record CONTEXTDEFINITIONSECTIONS begin
-    contents::List{ContextDefinitionSection}
+  @Record CONTEXTDEFINITIONSECTION begin
+    contents::List{ContextDefinition}
   end
 
 
-  @Record CONTEXTEQUATIONSECTIONS begin
-    contents::List{ContextEquationSection}
+  @Record CONTEXTEQUATIONS begin
+    label::Ident
+    contents::List{EquationItem}
   end
 
 #=   @Record CONTEXT begin
@@ -493,34 +485,15 @@ This type contains the information specific to one component. =#
 end
 
 
-@Uniontype ContextDefinitionSection begin
-  @Record CONTEXTDEFINITIONSECTION begin
-    contents::List{Context}
-  end
-end
-
-#= @Uniontype ContextEquationSystem begin
-  @Record CONTEXTEQUATIONSYSTEM begin
-    label::String
-    contents::List{EquationItem}
-  end
-end
- =#
-
-@Uniontype Context begin
-  @Record CONTEXT begin
+@Uniontype ContextDefinition begin
+  @Record CONTEXTDEFINITION begin
     label::Ident
     condition::ComponentCondition
   end
 end
 
 
-@Uniontype ContextEquationSection begin
-  @Record CONTEXTEQUATIONSECTION begin
-    label::Ident
-    contents::List{EquationItem}
-  end
-end
+
 
 #= Info specific for an algorithm item. =#
 @Uniontype AlgorithmItem begin
