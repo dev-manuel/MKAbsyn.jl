@@ -266,6 +266,10 @@ which can be declared as external C or FORTRAN functions. =#
     contents::List{ElementItem}
   end
 
+  @Record PRIVATE begin
+    contents::List{ElementItem}
+  end
+
   @Record CONSTRAINTS begin
     contents::List{Exp}
   end
